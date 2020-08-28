@@ -171,7 +171,7 @@
 				this.socketTask = null;
 				uni.closeSocket();
 				this.socketTask = uni.connectSocket({
-				    url: 'ws://192.168.0.102:9876?loginType=user&userPhone=18215554225', //仅为示例，并非真实接口地址。
+				    url: 'ws://47.92.221.9:8080?loginType=user&userPhone=18215554225', //仅为示例，并非真实接口地址。
 						success: () => {
 							console.log('websocket连接成功')
 						}
@@ -449,7 +449,7 @@
 					success: (res)=>{
 						const tempFilePaths = res.tempFilePaths;
 						uni.uploadFile({
-								url: 'http://192.168.0.102:8090/imRecordsController/multiUpload', //仅为示例，非真实的接口地址
+								url: 'http://47.92.221.9:80/im/imRecordsController/multiUpload', //仅为示例，非真实的接口地址
 								filePath: tempFilePaths[0],
 								name: 'file',
 								success: (uploadFileRes) => {

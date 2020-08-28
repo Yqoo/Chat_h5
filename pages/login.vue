@@ -26,7 +26,7 @@
 		},
 		methods: {
 			go: function() {
-				/* 192.168.0.102:9876 */
+				/* http://47.92.221.9:80/im */
 				
 				uni.navigateTo({
 					url:"./HM-chat/HM-chat"
