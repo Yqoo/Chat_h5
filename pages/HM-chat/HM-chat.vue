@@ -62,11 +62,6 @@
 								<view v-if="row.msg.type=='text'" class="bubble">
 									<rich-text :nodes="row.msg.content.text"></rich-text>
 								</view>
-								<!-- 语音消息 -->
-								<view v-if="row.msg.type=='voice'" class="bubble voice" @tap="playVoice(row.msg)" :class="playMsgid == row.msg.id?'play':''">
-									<view class="icon other-voice"></view>
-									<view class="length">{{row.msg.content.length}}</view>
-								</view>
 								<!-- 图片消息 -->
 								<view v-if="row.msg.type=='img'" class="bubble img" @tap="showPic(row.msg)">
 									<image :src="row.msg.content.url" :style="{'width': row.msg.content.w+'px','height': row.msg.content.h+'px'}"></image>
@@ -155,18 +150,163 @@
 				emojiList:[{}],
 				emojiPath:'',
 				latitude: Number,
-				longitude: Number
+				longitude: Number,
+				socketTask: null,
+				kfInfo:{ name: '', id: ''}
 			};
 		},
 		onLoad(option) {
 			this.getMsgList();
 			this.emojiList =emojiData.imgArr[1].emojiList
 		},
-		
+		onReady() {
+			this.socketTask || this.initWebSocket();
+		},
 		onShow(){
 			this.scrollTop = 9999999;
 		},
 		methods:{
+			// websocket 初始化
+			initWebSocket() {
+				this.socketTask = null;
+				uni.closeSocket();
+				this.socketTask = uni.connectSocket({
+				    url: 'ws://192.168.0.102:9876?loginType=user&userPhone=18215554225', //仅为示例，并非真实接口地址。
+						success: () => {
+							console.log('websocket连接成功')
+						}
+				});
+				this.socketTask.onOpen( res => {
+					console.log("WebSocket连接正常打开中...！");
+				});
+				this.socketTask.onMessage(e => {
+					let reader = new FileReader();
+					reader.readAsText(new Blob([e.data]), "UTF-8");
+					reader.onload = () => {
+						let str = JSON.parse(reader.result);
+						this.getConfigResult(str);
+					};
+				});
+				this.socketTask.onClose(res => {
+					console.log('WebSocket关闭')
+				})
+			},
+			getConfigResult(res) {
+				console.log(res);
+			      /* 
+			        接收处理后的数据
+			        msgType:
+							0 新用户等待接入（后台）userWaitAccess
+							 2 客服成功接入kfSuccessAccess
+			        3 用户已被接入（用户端）userHasAccess
+			        4 用户消息userMessage
+			        5 客服消息kfMessage
+			        6 系统通知（用户端）
+			        9 客服下线kfOutLine
+			      */
+			      const activeds = {
+							userWaitAccess: res => {
+								let msg = {
+									type: 'system',
+									msg: {
+											id: res.createDate,
+											time: new Date().getHours() + ":" + new Date().getMinutes(),
+											type: 'text',
+											userinfo: {
+													uid: res.createDate,
+													username: "客服",
+													face: "/static/img/im/face/face_2.jpg"
+											},
+											content: {text: res.context}
+									}
+								};
+								this.addSystemTextMsg(msg)
+							},
+			        kfSuccessAccess: res => {
+								this.kfInfo.name = res.kefuName;
+								this.kfInfo.id = res.kefuId;
+								let msg = {
+									type: 'system',
+									msg: {
+											id: res.createDate,
+											time: new Date().getHours() + ":" + new Date().getMinutes(),
+											type: 'text',
+											userinfo: {
+													uid: res.createDate,
+													username: "客服",
+													face: "/static/img/im/face/face_2.jpg"
+											},
+											content: {text: `客服(${res.kefuName})已成功接入，等待聊天咨询...`}
+									}
+								};
+								this.addSystemTextMsg(msg)
+							},
+							userHasAccess: res => {
+			          console.log(res);
+			        },
+			        userMessage: res => {
+			          console.log(res);
+			        },
+			        kfMessage: res => {
+								let reg = /^https?:\/\/(([a-zA-Z0-9_-])+(\.)?)*(:\d+)?(\/((\.)?(\?)?=?&?[a-zA-Z0-9_-](\?)?)*)*$/i;
+								let type = '', content = {};
+								if(reg.test(res.context)) {
+									type = 'img';
+									content = { url: res.context}
+								} else {
+									type = 'text';
+									content = { text: res.context}
+								}
+								let msg = {
+									type: 'user',
+									msg: {
+											id: res.createDate,
+											time: new Date().getHours() + ":" + new Date().getMinutes(),
+											type: type,
+											userinfo: {
+													uid: res.createDate,
+													username: "客服",
+													face: "/static/img/im/face/face_2.jpg"
+											},
+											content: content
+									}
+								};
+								this.screenMsg(msg)
+							},
+			        systemMessage: () => {
+			          this.notices.push({
+			            conent: "系统通知"
+			          });
+			        },
+			        kfOutLine: () => {
+								let msg = {
+									type: 'system',
+									msg: {
+											id: res.createDate,
+											time: new Date().getHours() + ":" + new Date().getMinutes(),
+											type: 'text',
+											userinfo: {
+													uid: res.createDate,
+													username: "客服",
+													face: "/static/img/im/face/face_2.jpg"
+											},
+											content: {text: `客服已下线`}
+									}
+								};
+								this.addSystemTextMsg(msg)
+							}
+			      };
+			      const aMap = new Map([
+							[0, "userWaitAccess"],
+							[2, "kfSuccessAccess"],
+			        [3, "userHasAccess"],
+			        [4, "userMessage"],
+			        [5, "kfMessage"],
+			        [7, "systemMessage"],
+			        [9, "kfOutLine"]
+			      ]);
+			      activeds[aMap.get(res.msgType)](res);
+			    },
 			// 接受消息(筛选处理)
 			screenMsg(msg){
 				//从长连接处转发给这个方法，进行筛选处理
@@ -190,7 +330,6 @@
 					// console.log('用户消息');
 					//非自己的消息震动
 					if(msg.msg.userinfo.uid!=this.myuid){
-						// console.log('振动');
 						uni.vibrateLong();
 					}
 				}
@@ -308,12 +447,26 @@
 					sourceType:[type],
 					sizeType: ['original', 'compressed'], //可以指定是原图还是压缩图，默认二者都有
 					success: (res)=>{
+						const tempFilePaths = res.tempFilePaths;
+						uni.uploadFile({
+								url: 'http://192.168.0.102:8090/imRecordsController/multiUpload', //仅为示例，非真实的接口地址
+								filePath: tempFilePaths[0],
+								name: 'file',
+								success: (uploadFileRes) => {
+										const url = JSON.parse(uploadFileRes.data).data[0];
+										this.socketTask.send({data: JSON.stringify({
+											userPhone: '18215554225',
+											kefuId: this.kfInfo.id,
+											kefuName: this.kfInfo.name,
+											msgType: 4,
+											context: url
+										})})
+								}
+						});
 						for(let i=0;i<res.tempFilePaths.length;i++){
 							uni.getImageInfo({
 								src: res.tempFilePaths[i],
 								success: (image)=>{
-									// console.log(image.width);
-									// console.log(image.height);
 									let msg = {url:res.tempFilePaths[i],w:image.width,h:image.height};
 									this.sendMsg(msg,'img');
 								}
@@ -389,17 +542,19 @@
 			},
 			// 发送文字消息
 			sendText(){
-				uni.showToast({
-					title:'发送文本消息',
-					icon:"none"
-				})
 				this.hideDrawer();//隐藏抽屉
 				if(!this.textMsg){
 					return;
 				}
-				
 				let content = this.replaceEmoji(this.textMsg);
 				let msg = {text:content}
+				this.socketTask.send({data: JSON.stringify({
+					userPhone: '18215554225',
+					kefuId: this.kfInfo.id,
+					kefuName: this.kfInfo.name,
+					msgType: 4,
+					context: this.textMsg
+				})})
 				this.sendMsg(msg,'text');
 				this.textMsg = '';//清空输入框
 			},
@@ -437,15 +592,16 @@
 				lastid++;
 				let msg = {type:'user',msg:{id:lastid,time:nowDate.getHours()+":"+nowDate.getMinutes(),type:type,userinfo:{uid:0,username:"大黑哥",face:"/static/img/face.jpg"},content:content}}
 				// 发送消息
+				/* 
+				 setTimeout(()=>{
+				 					lastid = this.msgList[this.msgList.length-1].msg.id;
+				 					lastid++;
+				 					msg = {type:'user',msg:{id:lastid,time:nowDate.getHours()+":"+nowDate.getMinutes(),type:type,userinfo:{uid:1,											username:"售后客服008",face:"/static/img/im/face/face_2.jpg"},content:content}}
+				 					// 本地模拟发送消息
+				 					this.screenMsg(msg);
+				 				},3000)
+				 */
 				this.screenMsg(msg);
-				// 定时器模拟对方回复,三秒
-				setTimeout(()=>{
-					lastid = this.msgList[this.msgList.length-1].msg.id;
-					lastid++;
-					msg = {type:'user',msg:{id:lastid,time:nowDate.getHours()+":"+nowDate.getMinutes(),type:type,userinfo:{uid:1,username:"售后客服008",face:"/static/img/im/face/face_2.jpg"},content:content}}
-					// 本地模拟发送消息
-					this.screenMsg(msg);
-				},3000)
 			},
 			
 			// 添加文字消息到列表
@@ -483,14 +639,6 @@
 				uni.navigateTo({
 					url: 'map'
 				})
-				/* uni.chooseLocation({
-				    success: function (res) {
-				        console.log('位置名称：' + res.name);
-				        console.log('详细地址：' + res.address);
-				        console.log('纬度：' + res.latitude);
-				        console.log('经度：' + res.longitude);
-				    }
-				}); */
 			}
 		}
 	}

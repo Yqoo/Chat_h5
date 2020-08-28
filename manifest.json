@@ -68,6 +68,7 @@
                 }
             }
         },
-        "template" : "template.h5.html"
+        "template" : "template.h5.html",
+        "domain" : "www.baidu.com"
     }
 }
