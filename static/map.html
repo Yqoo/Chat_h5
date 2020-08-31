@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>点击标记弹出信息窗口</title>
+	
+	 <script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-3.5.1.min.js"></script>
+</head>
+<script charset="utf-8"
+    src="https://map.qq.com/api/gljs?v=1.exp&key=V7EBZ-AYWLK-C56JV-ALVFB-JWBZ2-KAFN4"></script>
+<style type="text/css">
+    html,
+    body {
+        height: 100%;
+        margin: 0px;
+        padding: 0px;
+    }
+
+    #container {
+        width: 100%;
+        height: 100%;
+    }
+	.clearfix::after{
+    content:"";
+    display:block;
+    clear:both;
+	with:140px
+}
+</style>
+
+<body onload="initMap()">
+    <div id="container"></div>
+	 
+    <script>
+        function initMap() {
+			var fromlat,fromlng,fromcity,srcname,srclat,srclng,srccity,markerLayer;
+			
+			var center = new TMap.LatLng(39.984104, 116.307503);//设置中心点坐标
+			//初始化地图
+			var map = new TMap.Map(container, {
+			 zoom:12,//设置地图缩放级别
+				center: center,
+				minZoom:12,
+			});
+			 	
+			//创建并初始化MultiMarker
+			 markerLayer = new TMap.MultiMarker({
+				map: map,  //指定地图容器
+				//样式定义
+				styles: {
+					//创建一个styleId为"myStyle"的样式（styles的子属性名即为styleId）
+					//"myStyle": new TMap.MarkerStyle({ 
+					//	"width": 25,  // 点标记样式宽度（像素）
+					//	"height": 35, // 点标记样式高度（像素）
+					//	"src": '../img/marker.png',  //图片路径
+					//	//焦点在图片中的像素位置，一般大头针类似形式的图片以针尖位置做为焦点，圆形点以圆心位置为焦点
+					//	"anchor": { x: 16, y: 32 }  
+					//}) 
+				}, 
+			});
+		 
+		 
+			$.ajax({
+				type:'get',  
+				url:'https://apis.map.qq.com/ws/location/v1/ip',
+				data:{
+					key:'V7EBZ-AYWLK-C56JV-ALVFB-JWBZ2-KAFN4', //根据ip解析经纬度
+					output:'jsonp',
+				},
+				dataType: 'jsonp',
+				success:function (res){
+					console.log(res)
+					fromlat=res.result.location.lat;
+					fromlng=res.result.location.lng;
+					fromcity=res.result.ad_info.city
+					map.panTo(new TMap.LatLng(fromlat,fromlng));//将中心点定位至用户当前坐标   
+				}
+			})	 
+			
+		function add(fromlng,fromlat){
+				$.ajax({
+						type:'post',  
+						url:'http://47.92.221.9:80/im/storefrontsController/maps',
+						data:{
+							 longitude:fromlng,
+							 latitude:fromlat,
+						},
+						dataType: 'json',
+						success:function (res){
+						if(res.status==200){
+							var data = res.data;
+								for (var i=0;i<data.length;i++)
+								{ 
+								var va =data[i];
+									markerLayer.add([
+									{
+										"id": va.id,   //点标记唯一标识，后续如果有删除、修改位置等操作，都需要此id
+										"styleId": 'marker',  //指定样式id
+										"position": new TMap.LatLng(va.latitude, va.longitude),  //点标记坐标位置
+										"properties": {//自定义属性
+											"title": "marker1"
+											},
+											"name":va.name,
+											"describes":va.describes,
+											"address":va.address,
+											"distance":va.distance,
+											"img":va.img,
+										}]
+									);
+								}
+							}
+						}
+					})
+		}
+		//腾讯地图导航  当前：fromlat，fromlng，目标（商家名称）srcname,srclat,srclng
+		function txdt( ){
+			window.open("qqmap://map/routeplan?type=drive&from=当前位置&fromcoord="+fromlat+","+fromlng+"&to="+srcname+"&tocoord="+srclat+","+srclng+"&referer=OB4BZ-D4W3U-B7VVO-4PJWW-6TKDJ-WPB77")
+		}
+		//高德地图
+		function gddt(  ){
+		window.open("https://uri.amap.com/navigation?from="+fromlng+","+fromlat+",当前&to="+srclng+","+srclat+","+srcname+"&src=mypage&coordinate=gaode&callnative=1")	
+		}
+		function bddt( ){
+		//调起百度PC或Web地图，展示"西安市"从（lat:34.264642646862,lng:108.95108518068 ）"我家"到"大雁塔"的驾车路线。
+		window.open("http://api.map.baidu.com/direction?origin=latlng:"+fromlat+","+fromlng+"|name:当前&destination=latlng:"+srclat+","+srclng+"|"+srcname+"&mode=driving&destination_region="+srccity+"&origin_region="+fromcity+"&src=webapp.baidu.openAPIdemo");
+		}
+			 var infoWindow = new TMap.InfoWindow({
+                map: map,
+                position: new TMap.LatLng(39.984104, 116.307503),
+                offset: { x: 0, y: -32 } //设置信息窗相对position偏移像素
+            });
+            infoWindow.close();//初始关闭信息窗关闭
+			//监听marker点击事件
+			markerLayer.on("click", function (evt) {
+                //设置infoWindow  
+                infoWindow.open(); //打开信息窗
+                infoWindow.setPosition(evt.geometry.position);//设置信息窗位置
+                infoWindow.setContent("<div class='clearfix'>"+
+				"<div style='float:left;'>"+
+				"<img style='height:150px;width:150px' src='"+evt.geometry.img+"'/>"+
+				"</div> <div style='float:right;width:140px;text-align:left;padding-left:5px'>"+
+				"<div>"+evt.geometry.name+"</div>"+	
+				"<div style='width:150px;word-wrap:break-word '>"+evt.geometry.describes+"</div>"+			
+				"<div>"+evt.geometry.address+"</div>"+
+				"<a href='https://uri.amap.com/navigation?from="+fromlng+","+fromlat+",当前&to="+evt.latLng.lng+","+evt.latLng.lat+","+evt.geometry.address+"&src=mypage&coordinate=gaode&callnative=1' target='_blank' " +
+				"style='text-decoration:none;color: black;border: 1px solid #ddd; border-radius:5px;padding: 3px 5px;margin-top: 10px;display: inline-block;background: #4390de;color: #fff;'>去这里</a>"+			
+				"</div></div>");//设置信息窗内容 
+				//根据经纬度获取地址信息
+				getlatlng(evt.latLng.lat,evt.latLng.lng,evt.geometry.name);
+            });
+		//根据经纬度获取地址信息
+		function getlatlng(lat,lng,name){
+			 $.ajax({
+            url: "https://apis.map.qq.com/ws/geocoder/v1/",
+            type: "get",
+            dataType: 'jsonp',
+            data: {
+                location: lat + "," + lng,
+                key: "V7EBZ-AYWLK-C56JV-ALVFB-JWBZ2-KAFN4",
+                output: "jsonp"
+            },
+            success: function (res) {
+					srcname=name;
+					srclat=lat;
+					srclng=lng;
+					srccity=res.result.address_component.city 
+				}
+			})	
+		}
+		
+		  
+            //监听地图平移结束
+            map.on("panend",function(){
+				add(map.getCenter().lng,map.getCenter().lat);
+            })
+        }
+    </script>
+</body>
+
+</html>

@@ -69,6 +69,14 @@
             }
         },
         "template" : "template.h5.html",
-        "domain" : "www.baidu.com"
+        "domain" : "www.baidu.com",
+        "title" : "chat",
+        "router" : {
+            "base" : "",
+            "mode" : "history"
+        },
+        "devServer" : {
+            "https" : false
+        }
     }
 }

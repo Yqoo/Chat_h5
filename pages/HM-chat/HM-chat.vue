@@ -1,7 +1,8 @@
 <template>
 	<view>
 		<view class="content" @touchstart="hideDrawer">
-			<scroll-view class="msg-list" scroll-y="true" :scroll-with-animation="scrollAnimation" :scroll-top="scrollTop" :scroll-into-view="scrollToView" @scrolltoupper="loadHistory" upper-threshold="50">
+			<scroll-view class="msg-list" scroll-y="true" :scroll-with-animation="scrollAnimation" :scroll-top="scrollTop"
+			 :scroll-into-view="scrollToView" @scrolltoupper="loadHistory" upper-threshold="50">
 				<!-- 加载历史数据waitingUI -->
 				<view class="loading">
 					<view class="spinner">
@@ -14,7 +15,7 @@
 				</view>
 				<view class="row" v-for="(row,index) in msgList" :key="index" :id="'msg'+row.msg.id">
 					<!-- 系统消息 -->
-					<block v-if="row.type=='system'" >
+					<block v-if="row.type=='system'">
 						<view class="system">
 							<!-- 文字消息 -->
 							<view v-if="row.msg.type=='text'" class="text">
@@ -56,7 +57,8 @@
 							<!-- 右-用户名称-时间-消息 -->
 							<view class="right">
 								<view class="username">
-									<view class="name">{{row.msg.userinfo.username}}</view> <view class="time">{{row.msg.time}}</view>
+									<view class="name">{{row.msg.userinfo.username}}</view>
+									<view class="time">{{row.msg.time}}</view>
 								</view>
 								<!-- 文字消息 -->
 								<view v-if="row.msg.type=='text'" class="bubble">
@@ -74,7 +76,7 @@
 		</view>
 		<!-- 抽屉栏 -->
 		<view class="popup-layer" :class="popupLayerClass" @touchmove.stop.prevent="discard">
-			<emotion @addEmoji="addEmoji" :class="{hidden:hideEmoji}" ></emotion>
+			<emotion @addEmoji="addEmoji" :class="{hidden:hideEmoji}"></emotion>
 			<!-- 更多功能 相册-拍照-->
 			<view class="more-layer" :class="{hidden:hideMore}">
 				<view class="list">
@@ -82,9 +84,12 @@
 						<view class="icon tupian2"></view>
 					</view>
 					<view class="box" @tap="weizhi">
-						<image style="font-size:16px;width: 32px; height: 32px;" 
-						src="../../static/img/more/weizhi.png"></image>
+						<image style="font-size:16px;width: 32px; height: 32px;" src="../../static/img/more/weizhi.png"></image>
 					</view>
+					<!-- <view class="box" @tap="daohang">
+						<image style="font-size:16px;width: 32px; height: 32px;" 
+						src="../../static/img/more/daohang.png"></image>
+					</view> -->
 				</view>
 			</view>
 		</view>
@@ -96,10 +101,10 @@
 			</view>
 			<!-- #endif -->
 			<view class="textbox">
-				<view class="text-mode"  :class="isVoice?'hidden':''">
+				<view class="text-mode" :class="isVoice?'hidden':''">
 					<view class="box">
-						<textarea auto-height="true" v-model="textMsg" @focus="textareaFocus"/>
-					</view>
+						<textarea auto-height="true" v-model="textMsg" @focus="textareaFocus" />
+						</view>
 					<view class="em" @tap="chooseEmoji">
 						<view class="icon biaoqing"></view>
 					</view>
@@ -126,6 +131,7 @@
 		},
 		data() {
 			return {
+				userPhone: "",
 				//文字消息
 				// dotsCurrent:1,
 				textMsg:'',
@@ -156,6 +162,7 @@
 			};
 		},
 		onLoad(option) {
+			this.userPhone = option.userPhone;
 			this.getMsgList();
 			this.emojiList =emojiData.imgArr[1].emojiList
 		},
@@ -171,7 +178,7 @@
 				this.socketTask = null;
 				uni.closeSocket();
 				this.socketTask = uni.connectSocket({
-				    url: 'ws://47.92.221.9:8080?loginType=user&userPhone=18215554225', //仅为示例，并非真实接口地址。
+				    url: 'ws://47.92.221.9:8080?loginType=user&userPhone=' + this.userPhone, //仅为示例，并非真实接口地址。
 						success: () => {
 							console.log('websocket连接成功')
 						}
@@ -192,7 +199,6 @@
 				})
 			},
 			getConfigResult(res) {
-				console.log(res);
 			      /* 
 			        接收处理后的数据
 			        msgType:
@@ -215,12 +221,12 @@
 											userinfo: {
 													uid: res.createDate,
 													username: "客服",
-													face: "/static/img/im/face/face_2.jpg"
+													face: "/static/img/im/face/kefu.png"
 											},
 											content: {text: res.context}
 									}
 								};
-								this.addSystemTextMsg(msg)
+								res.context && this.addSystemTextMsg(msg)
 							},
 			        kfSuccessAccess: res => {
 								this.kfInfo.name = res.kefuName;
@@ -234,7 +240,7 @@
 											userinfo: {
 													uid: res.createDate,
 													username: "客服",
-													face: "/static/img/im/face/face_2.jpg"
+													face: "/static/img/im/face/kefu.png"
 											},
 											content: {text: `客服(${res.kefuName})已成功接入，等待聊天咨询...`}
 									}
@@ -242,7 +248,6 @@
 								this.addSystemTextMsg(msg)
 							},
 							userHasAccess: res => {
-			          console.log(res);
 			        },
 			        userMessage: res => {
 			          console.log(res);
@@ -266,7 +271,7 @@
 											userinfo: {
 													uid: res.createDate,
 													username: "客服",
-													face: "/static/img/im/face/face_2.jpg"
+													face: "/static/img/im/face/kefu.png"
 											},
 											content: content
 									}
@@ -288,7 +293,7 @@
 											userinfo: {
 													uid: res.createDate,
 													username: "客服",
-													face: "/static/img/im/face/face_2.jpg"
+													face: "/static/img/im/face/kefu.png"
 											},
 											content: {text: `客服已下线`}
 									}
@@ -297,8 +302,8 @@
 							}
 			      };
 			      const aMap = new Map([
-							[0, "userWaitAccess"],
-							[2, "kfSuccessAccess"],
+					[0, "userWaitAccess"],
+					[2, "kfSuccessAccess"],
 			        [3, "userHasAccess"],
 			        [4, "userMessage"],
 			        [5, "kfMessage"],
@@ -341,6 +346,7 @@
 			
 			//触发滑动到顶部(加载历史信息记录)
 			loadHistory(e){
+				return
 				if(this.isHistoryLoading){
 					return ;
 				}
@@ -380,7 +386,6 @@
 				// 消息列表
 				let list = [
 					{type:"system",msg:{id:0,type:"text",content:{text:"欢迎进入聊天室"}}},
-					{type:"user",msg:{id:1,type:"text",time:"12:56",userinfo:{uid:0,username:"大黑哥",face:"/static/img/face.jpg"},content:{text:"为什么温度会相差那么大？"}}},
 				]
 				// 获取消息中的图片,并处理显示尺寸
 				for(let i=0;i<list.length;i++){
@@ -455,7 +460,7 @@
 								success: (uploadFileRes) => {
 										const url = JSON.parse(uploadFileRes.data).data[0];
 										this.socketTask.send({data: JSON.stringify({
-											userPhone: '18215554225',
+											userPhone: this.userPhone,
 											kefuId: this.kfInfo.id,
 											kefuName: this.kfInfo.name,
 											msgType: 4,
@@ -549,7 +554,7 @@
 				let content = this.replaceEmoji(this.textMsg);
 				let msg = {text:content}
 				this.socketTask.send({data: JSON.stringify({
-					userPhone: '18215554225',
+					userPhone: this.userPhone,
 					kefuId: this.kfInfo.id,
 					kefuName: this.kfInfo.name,
 					msgType: 4,
@@ -590,13 +595,13 @@
 				var nowDate = new Date();
 				let lastid = this.msgList[this.msgList.length-1].msg.id;
 				lastid++;
-				let msg = {type:'user',msg:{id:lastid,time:nowDate.getHours()+":"+nowDate.getMinutes(),type:type,userinfo:{uid:0,username:"大黑哥",face:"/static/img/face.jpg"},content:content}}
+				let msg = {type:'user',msg:{id:lastid,time:nowDate.getHours()+":"+nowDate.getMinutes(),type:type,userinfo:{uid:0,username:this.userPhone,face:"/static/img/im/face/face_13.jpg"},content:content}}
 				// 发送消息
 				/* 
 				 setTimeout(()=>{
 				 					lastid = this.msgList[this.msgList.length-1].msg.id;
 				 					lastid++;
-				 					msg = {type:'user',msg:{id:lastid,time:nowDate.getHours()+":"+nowDate.getMinutes(),type:type,userinfo:{uid:1,											username:"售后客服008",face:"/static/img/im/face/face_2.jpg"},content:content}}
+				 					msg = {type:'user',msg:{id:lastid,time:nowDate.getHours()+":"+nowDate.getMinutes(),type:type,userinfo:{uid:1,											username:"售后客服008",face:"/static/img/im/face/kefu.png"},content:content}}
 				 					// 本地模拟发送消息
 				 					this.screenMsg(msg);
 				 				},3000)
@@ -639,7 +644,24 @@
 				uni.navigateTo({
 					url: 'map'
 				})
+			},
+			daohang() {
+				uni.chooseLocation({
+				    success: function (res) {}
+				});
 			}
+		},
+		mounted() {
+			const timer = setInterval(() => {
+			  this.socketTask.send({data: JSON.stringify({
+			  	userPhone: this.userPhone,
+			  	kefuId: this.kfInfo.id,
+			  	kefuName: this.kfInfo.name,
+			  	msgType: 10,
+			  	context: "ping"
+			  })})
+			}, 20 * 60 * 1000);
+			this.$once("hook:beforeDestroy", () => clearInterval(timer));
 		}
 	}
 </script>

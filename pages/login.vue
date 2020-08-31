@@ -8,7 +8,7 @@
 		<view class="text-area">
 			<text class="title">{{title}}</text>
 		</view>
-		<input type="text" placeholder="手机号" class="inputAcc" value="" />
+		<input type="text" placeholder="手机号" class="inputAcc" v-model="userPhone" />
 		<button class="loginBtn" @click="go">
 			Go
 		</button>
@@ -18,7 +18,8 @@
 	export default {
 		data() {
 			return {
-				title: '请使用手机号登录'
+				title: '请使用手机号登录',
+				userPhone: ''
 			}
 		},
 		onLoad() {
@@ -27,10 +28,18 @@
 		methods: {
 			go: function() {
 				/* http://47.92.221.9:80/im */
-				
-				uni.navigateTo({
-					url:"./HM-chat/HM-chat"
-				})
+				const reg = /^1\d{10}$/;
+				if(reg.test(this.userPhone)) {
+					uni.navigateTo({
+						url:"./HM-chat/HM-chat?userPhone=" + this.userPhone
+					})
+				} else {
+					uni.showToast({
+						title: "输入正确的手机号",
+						duration:2000,
+						icon: 'none'
+					})
+				}
 			}
 		}
 	}
